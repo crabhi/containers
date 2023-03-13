@@ -1,50 +1,251 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>reveal.js</title>
+        <title>Containers</title>
 
-		<link rel="stylesheet" href="revealjs/reset.css">
-		<link rel="stylesheet" href="revealjs/reveal.css">
-		<link rel="stylesheet" href="revealjs/theme/black.css">
+        <link rel="stylesheet" href="revealjs/reset.css">
+        <link rel="stylesheet" href="revealjs/reveal.css">
+        <link rel="stylesheet" href="revealjs/theme/black.css">
 
-		<!-- Theme used for syntax highlighted code -->
-		<link rel="stylesheet" href="revealjs/plugin/highlight/monokai.css">
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2
-						<aside class="notes">
-						<p>Some notes</p>
-						</aside>
-						<p>Some slide text</p>
-						<aside class="notes">
-						<p>and some more notes</p>
-					</aside>
-				</section>
-			</div>
-		</div>
+        <!-- Theme used for syntax highlighted code -->
+        <link rel="stylesheet" href="revealjs/plugin/highlight/monokai.css">
+        <style>
+            .reveal p,section,ul,h1,h2,h3,h4,h5,h6 {
+                text-align: left;
+            }
+            .reveal ul,ol {
+                display: block;
+            }
+        </style>
 
-		<script src="revealjs/reveal.js"></script>
-		<script src="revealjs/plugin/notes/notes.js"></script>
-		<script src="revealjs/plugin/markdown/markdown.js"></script>
-		<script src="revealjs/plugin/highlight/highlight.js"></script>
-		<script>
-			// More info about initialization & config:
-			// - https://revealjs.com/initialization/
-			// - https://revealjs.com/config/
-			Reveal.initialize({
-				hash: true,
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides">
+                <section data-markdown>
+                    <textarea data-template>
+                    # Containers
 
-				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
-			});
-		</script>
-	</body>
+                    - Like a VM? <!-- .element: class="fragment" -->
+                        - Filesystem <!-- .element: class="fragment" -->
+                        - Hostname <!-- .element: class="fragment" -->
+                        - Network <!-- .element: class="fragment" -->
+                        - Users <!-- .element: class="fragment" -->
+                        - Processes <!-- .element: class="fragment" -->
+                        - Clock (uptime) <!-- .element: class="fragment" -->
+                        - Limiting CPU, Memory, Net, ...<!-- .element: class="fragment" -->
+
+                    - Just a folder? <!-- .element: class="fragment" -->
+                    <aside class="notes">
+                        <pre><code>
+                        docker run -it --rm debian:11
+                        cat /etc/os-release
+                        hostname
+                        hostname -I
+                        whoami
+                        sleep infinity
+
+                        ps aux | grep infini
+
+                        docker ps --format '{{ .ID }}' | xargs docker inspect | jq -r '.[].GraphDriver.Data.LowerDir'
+                        </code></pre>
+                    </aside>
+                    ---
+
+                    ## How does it work?
+
+                    - _System call_ `unshare`
+                        - `/usr/bin/unshare`
+                    - Filesystem with snapshot support
+                        - btrfs, zfs
+                        - **overlay**
+                    - CGroups
+                        - `/sys/fs/cgroup/`
+
+                    ---
+
+                    ## Chroot
+
+                    Bootstrap your own debian:
+
+                    ```sh
+                    sudo apt install fakeroot fakechroot
+                    ```
+                    ```sh
+                    sudo debootstrap \
+                        --variant=minbase \
+                        stable my-debian \
+                        http://deb.debian.org/debian/
+
+                    sudo chown $UID:$GID my-debian -R
+
+                    sudo  chroot my-ubuntu bash
+                    ```
+                    ---
+
+                    ## Chroot
+
+                    Or Ubuntu:
+
+                    ```sh
+                    sudo debootstrap \
+                        --variant=minbase \
+                        jammy my-ubuntu \
+                        http://archive.ubuntu.com/ubuntu/
+
+                    sudo chroot my-ubuntu bash
+                    ```
+
+                    ---
+                    ## Chroot
+
+                    Or a minimal distro:
+
+                    ```sh
+                    sudo apt install busybox-static
+                    ```
+
+                    ```sh
+                    mkdir -p minimal
+
+                    cp `which busybox` minimal/
+
+                    sudo  chroot minimal/ /busybox sh
+                    ```
+                    ---
+
+                    ## Look Ma!
+
+                    ### No Linux in my container!
+
+                    ```shell
+                    root@krab-monitora:/# ls -a /boot
+                    .  ..
+                    ```
+                    vs.
+                    ```shell
+                    $ ls -al /boot
+                    total 415412
+                    drwxr-xr-x  5 root root      4096 bře  8 10:03 .
+                    drwxr-xr-x 22 root root      4096 bře  1 12:44 ..
+                    -rw-r--r--  1 root root    261948 úno 22 15:01 config-5.15.0-67-generic
+                    -rw-r--r--  1 root root    269885 led 30 16:44 config-5.19.0-32-generic
+                    -rw-r--r--  1 root root    270020 úno 17 15:31 config-5.19.0-35-generic
+                    drwx------  3 root root      4096 led  1  1970 efi
+                    drwxr-xr-x  5 root root      4096 bře  6 09:16 grub
+                    lrwxrwxrwx  1 root root        28 bře  6 09:15 initrd.img -> initrd.img-5.15.0-67-generic
+                    -rw-r--r--  1 root root 115552485 bře  6 09:15 initrd.img-5.15.0-67-generic
+                    -rw-r--r--  1 root root 126552765 úno 27 10:55 initrd.img-5.19.0-32-generic
+                    -rw-r--r--  1 root root 126811238 bře  8 10:03 initrd.img-5.19.0-35-generic
+                    lrwxrwxrwx  1 root root        28 bře  6 09:15 initrd.img.old -> initrd.img-5.19.0-35-generic
+                    drwx------  2 root root     16384 lis 13  2021 lost+found
+                    -rw-r--r--  1 root root    182800 úno  6  2022 memtest86+.bin
+                    -rw-r--r--  1 root root    184476 úno  6  2022 memtest86+.elf
+                    -rw-r--r--  1 root root    184980 úno  6  2022 memtest86+_multiboot.bin
+                    -rw-------  1 root root   6254553 úno 22 15:01 System.map-5.15.0-67-generic
+                    -rw-------  1 root root   6429633 led 30 16:44 System.map-5.19.0-32-generic
+                    -rw-------  1 root root   6430111 úno 17 15:31 System.map-5.19.0-35-generic
+                    lrwxrwxrwx  1 root root        25 bře  6 09:15 vmlinuz -> vmlinuz-5.15.0-67-generic
+                    -rw-------  1 root root  11559080 úno 22 15:03 vmlinuz-5.15.0-67-generic
+                    -rw-------  1 root root  12186376 led 30 16:46 vmlinuz-5.19.0-32-generic
+                    -rw-------  1 root root  12187720 úno 17 15:33 vmlinuz-5.19.0-35-generic
+                    lrwxrwxrwx  1 root root        25 bře  6 09:15 vmlinuz.old -> vmlinuz-5.19.0-35-generic
+                    ```
+                    ---
+
+                    ## Unknown user?
+
+                    ```shell
+                    root@krab-monitora:/# ls -l /usr/bin/ls
+                    -rwxr-xr-x 1 1000 1000 138208 Feb  7  2022 /usr/bin/ls
+                    ```
+
+                    Tell it about a user:
+                    ```shell
+                    root@krab-monitora:/# echo krabiii:x:1000:1000:krabiii:/home:/usr/bin/bash \
+                        > /etc/passwd
+
+                    root@krab-monitora:/# ls /usr/bin/ls -l
+                    -rwxr-xr-x 1 krabiii 1000 138208 Feb  7  2022 /usr/bin/ls
+                    ```
+
+
+                    Remapping:
+                    ```shell
+                    $ unshare -r chroot my-ubuntu bash
+
+                    root@krab-monitora:/# ls -l /usr/bin/ls
+                    -rwxr-xr-x 1 root root 138208 Feb  7  2022 /usr/bin/ls
+                    ```
+                    ---
+
+                    ## Processes
+
+                    Try this (in minimal):
+                    ```shell
+                    # ps
+                    PID   USER     COMMAND
+                    ps: can't open '/proc': No such file or directory
+                    ```
+
+                    In Ubuntu:
+                    ```shell
+                    root@krab-monitora:/# ps
+                    Error, do this: mount -t proc proc /proc
+                    root@krab-monitora:/# ls -a /proc/
+                    .  ..
+                    ```
+
+                    <h2 style="text-align:center"> 😱 </h2>
+                    ---
+
+                    ## Can we be PID 1?
+
+                    ```shell
+                    $ sudo unshare --pid --mount-proc --fork
+                    root@krab-monitora:/home/krab/workspace/containers/work# ps
+                        PID TTY          TIME CMD
+                          1 pts/3    00:00:00 bash
+                         14 pts/3    00:00:00 ps
+                    ```
+
+                    PID + Chroot together:
+
+                    ```shell
+                    sudo unshare --pid --fork chroot my-ubuntu bash
+                    ```
+                    ---
+
+                    ## Layers
+
+                    <div style="text-align: center">
+                        <img src="img/layers.jpg">
+                    </div>
+
+                    </textarea>
+                </section>
+            </div>
+        </div>
+
+        <script src="revealjs/reveal.js"></script>
+        <script src="revealjs/plugin/notes/notes.js"></script>
+        <script src="revealjs/plugin/markdown/markdown.js"></script>
+        <script src="revealjs/plugin/highlight/highlight.js"></script>
+        <script>
+            // More info about initialization & config:
+            // - https://revealjs.com/initialization/
+            // - https://revealjs.com/config/
+            Reveal.initialize({
+                hash: true,
+
+                // Learn about plugins: https://revealjs.com/plugins/
+                plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+            });
+        </script>
+    </body>
 <!--
     reveal.js used under license:
 
