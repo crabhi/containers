@@ -77,9 +77,6 @@
                     Bootstrap your own debian:
 
                     ```sh
-                    sudo apt install fakeroot fakechroot
-                    ```
-                    ```sh
                     sudo debootstrap \
                         --variant=minbase \
                         stable my-debian \
@@ -101,6 +98,8 @@
                         jammy my-ubuntu \
                         http://archive.ubuntu.com/ubuntu/
 
+                    sudo chown $UID:$GID my-ubuntu -R
+                    
                     sudo chroot my-ubuntu bash
                     ```
 
@@ -318,7 +317,7 @@
                     mkdir minimal-work2 minimal-changes2 minimal-merged2
 
                     sudo mount -t overlay overlay \
-                      -olowerdir=minimal-changes,upperdir=minimal-changes2,workdir=minimal-work2 \
+                      -olowerdir=minimal-merged,upperdir=minimal-changes2,workdir=minimal-work2 \
                       minimal-merged2
                     ```
 
@@ -328,7 +327,7 @@
 
                     ---
 
-                    # KOHEU
+                    # КОНЕЦ
 
                     </textarea>
                 </section>
