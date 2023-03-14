@@ -27,6 +27,11 @@
             <div class="slides">
                 <section data-markdown>
                     <textarea data-template>
+
+                    <div style="text-align: center">
+                        <img src="img/microservices.webp">
+                    </div>
+                    ---
                     # Containers
 
                     - Like a VM? <!-- .element: class="fragment" -->
@@ -219,17 +224,111 @@
                     ```
                     ---
 
-                    ## Networking
+                    ## Networks
 
 
+                    Not going to cover them here. See [a tutorial](https://aly.arriqaaq.com/linux-networking-bridge-iptables-and-docker/).
+
+                    <div class="fragment">
+                    You'll need:
+
+                    - A network namespace
+                    - Virtual eth interface of type peer (a pair)
+                    - Move one peer into the namespace
+                    - (usually) A bridge interface to connect elsewhere (`docker0`)
+                    </div>
 
                     ---
 
+                    ## Networks
+
+                    The Docker way to tweak manually:
+
+                    ```sh
+                    CONTAINER=$(docker run ...)
+
+                    docker network create $NETWORK
+                    docker network connect $NETWORK $CONTAINER
+                    ```
+                    ---
+
+
+                    <div style="text-align: center">
+                        <img src="img/docker_image.jpeg">
+
+
+                    </div>
+
+                    <p style="text-align: center">Container vs Image</p>
+
+                    ---
+
+                    ## Images
+
+                    ```shell
+                    tar -C minimal -c . -f minimal-image.tar
+
+                    docker import minimal-image.tar krabbusybox
+                    docker run --rm -it mybusybox /busybox sh
+                    ```
+
+                    #### + Metadata
+
+                    - Which program to run
+                    - Which architecture is it good for
+                    - ...
+
+                    ---
+
+
                     ## Layers
+
+                    Optimization for big images
+
+                    - only changes
+
+                    We'll try using Overlay FS.
 
                     <div style="text-align: center">
                         <img src="img/layers.jpg">
                     </div>
+
+                    ---
+
+                    ## OverlayFS
+
+                    ```shell
+                    mkdir minimal-work minimal-changes minimal-merged
+
+                    sudo mount -t overlay overlay \
+                      -olowerdir=minimal,upperdir=minimal-changes,workdir=minimal-work \
+                      minimal-merged
+                    ```
+
+                    Lower dir = base image \
+                    Upper dir = stores our changes \
+                    Work dir = ¯\\_(ツ)_/¯
+
+                    We work in **`minimal-merged`**
+                    ---
+
+                    ## Layers chaining
+
+                    ```shell
+                    mkdir minimal-work2 minimal-changes2 minimal-merged2
+
+                    sudo mount -t overlay overlay \
+                      -olowerdir=minimal-changes,upperdir=minimal-changes2,workdir=minimal-work2 \
+                      minimal-merged2
+                    ```
+
+                    - `tar` layers together.
+                    - Add metadata to order them.
+                    - Voilà, multilayer Docker image
+
+                    ---
+
+                    # KOHEU
 
                     </textarea>
                 </section>
