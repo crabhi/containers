@@ -66,12 +66,53 @@
 
                     ## Busybox
 
+                    ```sh
+                    sudo apt install busybox-static
+                    ```
+
+                    ```sh
+                    mkdir -p minimal
+
+                    cp `which busybox` minimal/
+
+                    sudo  chroot minimal/ /busybox sh
+                    ```
+
                     ---
 
-                    ## How does it work?
+
+                    <div style="text-align: center">
+                        <img src="img/docker_image.jpeg">
+
+
+                    </div>
+
+                    <p style="text-align: center">Container vs Image</p>
+
+                    ---
+
+                    ## Images
+
+                    ```shell
+                    tar -C minimal -c . -f minimal-image.tar
+
+                    docker import minimal-image.tar krabbusybox
+                    docker run --rm -it mybusybox /busybox sh
+                    ```
+
+                    #### + Metadata
+
+                    - Which program to run
+                    - Which architecture is it good for
+                    - ...
+
+                    ---
+
+                    ## How do containers work?
 
                     - _System call_ `unshare`
                         - `/usr/bin/unshare`
+                    - `pivot_root` (`chroot`)
                     - Filesystem with snapshot support
                         - btrfs, zfs
                         - **overlay**
@@ -84,9 +125,6 @@
 
                     Bootstrap your own debian:
 
-                    ```sh
-                    sudo apt install fakeroot fakechroot
-                    ```
                     ```sh
                     sudo debootstrap \
                         --variant=minbase \
@@ -108,6 +146,8 @@
                         --variant=minbase \
                         jammy my-ubuntu \
                         http://archive.ubuntu.com/ubuntu/
+
+                    sudo chown $UID:$GID my-ubuntu -R
 
                     sudo chroot my-ubuntu bash
                     ```
@@ -260,35 +300,6 @@
                     ```
                     ---
 
-
-                    <div style="text-align: center">
-                        <img src="img/docker_image.jpeg">
-
-
-                    </div>
-
-                    <p style="text-align: center">Container vs Image</p>
-
-                    ---
-
-                    ## Images
-
-                    ```shell
-                    tar -C minimal -c . -f minimal-image.tar
-
-                    docker import minimal-image.tar krabbusybox
-                    docker run --rm -it mybusybox /busybox sh
-                    ```
-
-                    #### + Metadata
-
-                    - Which program to run
-                    - Which architecture is it good for
-                    - ...
-
-                    ---
-
-
                     ## Layers
 
                     Optimization for big images
@@ -326,7 +337,7 @@
                     mkdir minimal-work2 minimal-changes2 minimal-merged2
 
                     sudo mount -t overlay overlay \
-                      -olowerdir=minimal-changes,upperdir=minimal-changes2,workdir=minimal-work2 \
+                      -olowerdir=minimal-merged,upperdir=minimal-changes2,workdir=minimal-work2 \
                       minimal-merged2
                     ```
 
